@@ -1,0 +1,95 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Java ###
+*.class
+hs_err_pid*
+replay_pid*
+
+### Maven (extra) ###
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+### Spring Boot ###
+# Local/secret config — keep application.properties tracked, ignore per-dev overrides
+application-local.properties
+application-local.yml
+application-local.yaml
+application-secret*.properties
+application-secret*.yml
+.env
+.env.*
+!.env.example
+# Runtime output
+*.log
+logs/
+*.pid
+spring-shell.log
+
+### MySQL ###
+# Dumps / exports — schema.sql stays tracked
+*.dump
+*.dump.sql
+*.sql.gz
+*.sql.zip
+db/dumps/
+db/backup/
+mysql-data/
+# MySQL Workbench backups
+*.mwb.bak
+# Docker local overrides
+docker-compose.override.yml
+
+### VS Code (extra) ###
+*.code-workspace
+.history/
+
+### Claude Code ###
+# Track .claude/CLAUDE.md, .claude/rules/, .claude/settings.json; ignore per-dev state
+.claude/settings.local.json
+.claude/*.local.*
+.claude/worktrees/
+CLAUDE.local.md
+
+### OS ###
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
