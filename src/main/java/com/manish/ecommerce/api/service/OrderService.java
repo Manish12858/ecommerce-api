@@ -17,15 +17,19 @@ import com.manish.ecommerce.api.exception.BusinessRuleException;
 import com.manish.ecommerce.api.exception.ResourceNotFoundException;
 import com.manish.ecommerce.api.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OrderService {
+
+    private static final int LOW_STOCK_THRESHOLD = 10;
 
     private final OrderRepository orderRepository;
     private final CustomerService customerService;
@@ -58,6 +62,7 @@ public class OrderService {
             order.addItem(item);
         }
         order.recalculateTotal();
+        warnOnLowStock(order);
 
         Payment payment = Payment.builder()
                 .paymentMethod(request.getPaymentMethod())
@@ -139,6 +144,16 @@ public class OrderService {
                     + "': requested " + quantity + ", available " + product.getStockQuantity());
         }
         product.setStockQuantity(product.getStockQuantity() - quantity);
+    }
+
+    /** Warning only — an order that drains stock below the threshold is still valid. */
+    private void warnOnLowStock(Order order) {
+        for (OrderItem item : order.getItems()) {
+            Product product = item.getProduct();
+            if (product.getStockQuantity() < LOW_STOCK_THRESHOLD) {
+                log.warn("Low stock alert: {} has {} units left", product.getName(), product.getStockQuantity());
+            }
+        }
     }
 
     private void transition(Order order, OrderStatus target) {

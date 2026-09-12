@@ -16,7 +16,12 @@ import com.manish.ecommerce.api.entity.Product;
 import com.manish.ecommerce.api.exception.BusinessRuleException;
 import com.manish.ecommerce.api.exception.ResourceNotFoundException;
 import com.manish.ecommerce.api.repository.OrderRepository;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -138,6 +143,42 @@ class OrderServiceTest {
         assertThatThrownBy(() -> orderService.placeOrder(orderRequest(item(1L, 1))))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("not active");
+    }
+
+    @Test
+    void should_logLowStockWarning_when_remainingStockDropsBelowThreshold() {
+        // Arrange
+        ListAppender<ILoggingEvent> logs = attachLogCapture();
+        Product headphones = product(4L, "ELEC-HDP-004", "199.99", 12);
+        when(customerService.getEntity(1L)).thenReturn(customer());
+        when(productService.getEntity(4L)).thenReturn(headphones);
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        OrderResponse response = orderService.placeOrder(orderRequest(item(4L, 5)));
+
+        // Assert
+        assertThat(response.getStatus()).as("order still placed").isEqualTo(OrderStatus.PENDING);
+        assertThat(logs.list).singleElement().satisfies(event -> {
+            assertThat(event.getLevel()).isEqualTo(Level.WARN);
+            assertThat(event.getFormattedMessage()).isEqualTo("Low stock alert: Product ELEC-HDP-004 has 7 units left");
+        });
+    }
+
+    @Test
+    void should_notLogLowStockWarning_when_remainingStockIsAtOrAboveThreshold() {
+        // Arrange
+        ListAppender<ILoggingEvent> logs = attachLogCapture();
+        Product headphones = product(4L, "ELEC-HDP-004", "199.99", 12);
+        when(customerService.getEntity(1L)).thenReturn(customer());
+        when(productService.getEntity(4L)).thenReturn(headphones);
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        orderService.placeOrder(orderRequest(item(4L, 2)));
+
+        // Assert
+        assertThat(logs.list).filteredOn(e -> e.getLevel() == Level.WARN).isEmpty();
     }
 
     // --- read ---------------------------------------------------------------
@@ -370,6 +411,14 @@ class OrderServiceTest {
     }
 
     // --- fixtures -----------------------------------------------------------
+
+    private static ListAppender<ILoggingEvent> attachLogCapture() {
+        Logger logger = (Logger) LoggerFactory.getLogger(OrderService.class);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        return appender;
+    }
 
     private static Customer customer() {
         return Customer.builder().id(1L).firstName("John").lastName("Doe").email("john.doe@example.com").build();
