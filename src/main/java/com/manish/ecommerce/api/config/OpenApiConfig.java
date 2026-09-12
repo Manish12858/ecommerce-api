@@ -21,11 +21,12 @@ public class OpenApiConfig {
                         .title("E-commerce API")
                         .version("v1")
                         .description("""
-                                REST API for categories, products, customers, orders and payments.
+                                REST API for categories, products, customers, orders, payments and product reviews.
 
                                 **Business rules**
                                 - Stock is reserved when an order is placed, not at shipment.
                                 - Cancelling an order restores stock and refunds a completed payment.
+                                - A customer may only review a product they have received (a DELIVERED order containing it).
                                 - Order status moves one way: PENDING → CONFIRMED → PROCESSING → SHIPPED → DELIVERED;
                                   CANCELLED is reachable from any state before SHIPPED. DELIVERED, CANCELLED and REFUNDED are final.
                                 """)

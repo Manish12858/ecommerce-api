@@ -9,6 +9,7 @@ import com.manish.ecommerce.api.exception.DuplicateResourceException;
 import com.manish.ecommerce.api.exception.ResourceNotFoundException;
 import com.manish.ecommerce.api.repository.CustomerRepository;
 import com.manish.ecommerce.api.repository.OrderRepository;
+import com.manish.ecommerce.api.repository.ProductReviewRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,6 +37,9 @@ class CustomerServiceTest {
 
     @Mock
     private OrderRepository orderRepository;
+
+    @Mock
+    private ProductReviewRepository productReviewRepository;
 
     @InjectMocks
     private CustomerService customerService;
@@ -162,6 +166,7 @@ class CustomerServiceTest {
         Customer existing = customer(1L, "john.doe@example.com");
         when(customerRepository.findById(1L)).thenReturn(Optional.of(existing));
         when(orderRepository.existsByCustomerId(1L)).thenReturn(false);
+        when(productReviewRepository.existsByCustomerId(1L)).thenReturn(false);
 
         // Act
         customerService.delete(1L);
@@ -180,6 +185,20 @@ class CustomerServiceTest {
         assertThatThrownBy(() -> customerService.delete(1L))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("existing orders");
+        verify(customerRepository, never()).delete(any());
+    }
+
+    @Test
+    void should_throwBusinessRule_when_deletingCustomerWithReviews() {
+        // Arrange
+        when(customerRepository.findById(1L)).thenReturn(Optional.of(customer(1L, "john.doe@example.com")));
+        when(orderRepository.existsByCustomerId(1L)).thenReturn(false);
+        when(productReviewRepository.existsByCustomerId(1L)).thenReturn(true);
+
+        // Act & Assert
+        assertThatThrownBy(() -> customerService.delete(1L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("posted reviews");
         verify(customerRepository, never()).delete(any());
     }
 

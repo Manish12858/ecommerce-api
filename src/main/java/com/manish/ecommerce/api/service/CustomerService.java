@@ -9,6 +9,7 @@ import com.manish.ecommerce.api.exception.DuplicateResourceException;
 import com.manish.ecommerce.api.exception.ResourceNotFoundException;
 import com.manish.ecommerce.api.repository.CustomerRepository;
 import com.manish.ecommerce.api.repository.OrderRepository;
+import com.manish.ecommerce.api.repository.ProductReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,7 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final OrderRepository orderRepository;
+    private final ProductReviewRepository productReviewRepository;
 
     @Transactional
     public CustomerResponse create(CustomerRequest request) {
@@ -70,6 +72,9 @@ public class CustomerService {
         Customer customer = getEntity(id);
         if (orderRepository.existsByCustomerId(id)) {
             throw new BusinessRuleException("Cannot delete customer '" + customer.getEmail() + "': they have existing orders");
+        }
+        if (productReviewRepository.existsByCustomerId(id)) {
+            throw new BusinessRuleException("Cannot delete customer '" + customer.getEmail() + "': they have posted reviews");
         }
         customerRepository.delete(customer);
     }

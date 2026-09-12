@@ -10,6 +10,7 @@ import com.manish.ecommerce.api.exception.DuplicateResourceException;
 import com.manish.ecommerce.api.exception.ResourceNotFoundException;
 import com.manish.ecommerce.api.repository.OrderItemRepository;
 import com.manish.ecommerce.api.repository.ProductRepository;
+import com.manish.ecommerce.api.repository.ProductReviewRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,6 +42,9 @@ class ProductServiceTest {
 
     @Mock
     private OrderItemRepository orderItemRepository;
+
+    @Mock
+    private ProductReviewRepository productReviewRepository;
 
     @Mock
     private CategoryService categoryService;
@@ -201,6 +205,7 @@ class ProductServiceTest {
         Product existing = product(10L, "ELEC-MOU-001", 150);
         when(productRepository.findById(10L)).thenReturn(Optional.of(existing));
         when(orderItemRepository.existsByProductId(10L)).thenReturn(false);
+        when(productReviewRepository.existsByProductId(10L)).thenReturn(false);
 
         // Act
         productService.delete(10L);
@@ -219,6 +224,20 @@ class ProductServiceTest {
         assertThatThrownBy(() -> productService.delete(10L))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("existing orders");
+        verify(productRepository, never()).delete(any());
+    }
+
+    @Test
+    void should_throwBusinessRule_when_deletingProductWithReviews() {
+        // Arrange
+        when(productRepository.findById(10L)).thenReturn(Optional.of(product(10L, "ELEC-MOU-001", 150)));
+        when(orderItemRepository.existsByProductId(10L)).thenReturn(false);
+        when(productReviewRepository.existsByProductId(10L)).thenReturn(true);
+
+        // Act & Assert
+        assertThatThrownBy(() -> productService.delete(10L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("customer reviews");
         verify(productRepository, never()).delete(any());
     }
 

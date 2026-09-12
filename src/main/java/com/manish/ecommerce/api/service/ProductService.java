@@ -10,6 +10,7 @@ import com.manish.ecommerce.api.exception.DuplicateResourceException;
 import com.manish.ecommerce.api.exception.ResourceNotFoundException;
 import com.manish.ecommerce.api.repository.OrderItemRepository;
 import com.manish.ecommerce.api.repository.ProductRepository;
+import com.manish.ecommerce.api.repository.ProductReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final OrderItemRepository orderItemRepository;
+    private final ProductReviewRepository productReviewRepository;
     private final CategoryService categoryService;
 
     @Transactional
@@ -91,6 +93,10 @@ public class ProductService {
         if (orderItemRepository.existsByProductId(id)) {
             throw new BusinessRuleException(
                     "Cannot delete product '" + product.getSku() + "': it appears on existing orders. Deactivate it instead");
+        }
+        if (productReviewRepository.existsByProductId(id)) {
+            throw new BusinessRuleException(
+                    "Cannot delete product '" + product.getSku() + "': it has customer reviews. Deactivate it instead");
         }
         productRepository.delete(product);
     }
