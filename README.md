@@ -98,6 +98,26 @@ curl -X POST http://localhost:8080/api/v1/orders \
 
 ## Docker
 
+### Full local stack (API + MySQL) with Compose
+
+[`docker-compose.yml`](docker-compose.yml) runs the API from the Dockerfile plus **MySQL 8.4**. MySQL loads [`db/schema.sql`](db/schema.sql) on first start (tables + seed data); the API waits for MySQL's health check before starting. All secrets come from `.env`.
+
+```bash
+cp .env.example .env          # set MYSQL_ROOT_PASSWORD (DB_PASSWORD should match it)
+docker compose up -d --build
+docker compose ps             # both containers report (healthy)
+curl http://localhost:8080/api/v1/products
+```
+
+| Service | Host port | Notes |
+|---|---|---|
+| `api` | 8080 | built from `./Dockerfile`; `DB_URL=jdbc:mysql://mysql:3306/…` |
+| `mysql` | **3307** | so it doesn't clash with a MySQL already on 3306; data in the `mysql-data` volume |
+
+`docker compose down` keeps the data; `docker compose down -v` wipes it so `schema.sql` runs again on the next `up`. With the stack running, `./mvnw spring-boot:run` on the host also works — the default `.env.example` points `DB_URL` at `localhost:3307`.
+
+### Image only
+
 A multi-stage [`Dockerfile`](Dockerfile) builds with Temurin 21 JDK, extracts Spring Boot layers, and runs on a Temurin 21 JRE (Alpine) as an unprivileged user (`uid 10001`) with a `HEALTHCHECK` on `/actuator/health`.
 
 ```bash
@@ -107,8 +127,6 @@ docker run -d -p 8080:8080 \
   -e DB_URL=jdbc:mysql://host.docker.internal:3306/ecommerce_db \
   -e DB_USER=root -e DB_PASSWORD=... \
   ecommerce-api
-
-docker inspect --format '{{.State.Health.Status}}' <container>   # → healthy
 ```
 
 - Tests are **not** run in the image build (they need a live MySQL) — run `./mvnw verify` in CI first.
@@ -123,9 +141,10 @@ All configuration lives in [`src/main/resources/application.properties`](src/mai
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DB_URL` | `jdbc:mysql://localhost:3306/ecommerce_db` | JDBC URL |
+| `DB_URL` | `jdbc:mysql://localhost:3306/ecommerce_db` | JDBC URL (`.env.example` uses `:3307`, the Compose MySQL) |
 | `DB_USER` | `root` | DB user |
 | `DB_PASSWORD` | *(none — required)* | DB password. Startup fails fast if unset. |
+| `MYSQL_DATABASE`, `MYSQL_ROOT_PASSWORD` | — | Compose only: passed to the MySQL container; the API's `DB_PASSWORD` is derived from `MYSQL_ROOT_PASSWORD`. |
 
 Other notable settings:
 
