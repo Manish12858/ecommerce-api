@@ -19,9 +19,10 @@ public class ReviewRequest {
     @NotNull
     private Long customerId;
 
-    @NotNull
-    @Min(1)
-    @Max(5)
+    /** Star rating. The DB enforces the same range via CHECK (rating BETWEEN 1 AND 5). */
+    @NotNull(message = "rating is required")
+    @Min(value = 1, message = "rating must be between 1 and 5")
+    @Max(value = 5, message = "rating must be between 1 and 5")
     private Integer rating;
 
     @NotBlank
