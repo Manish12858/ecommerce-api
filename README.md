@@ -10,6 +10,7 @@ It is deliberately opinionated: DTOs at the edge, business rules in services, on
 
 - [Stack](#stack)
 - [Quick start](#quick-start)
+- [Docker](#docker)
 - [Configuration](#configuration)
 - [API reference](#api-reference)
 - [Business rules](#business-rules)
@@ -92,6 +93,27 @@ curl -X POST http://localhost:8080/api/v1/orders \
   -d '{"customerId":1,"shippingAddress":"123 Maple Street","paymentMethod":"UPI",
        "items":[{"productId":1,"quantity":3}]}'
 ```
+
+---
+
+## Docker
+
+A multi-stage [`Dockerfile`](Dockerfile) builds with Temurin 21 JDK, extracts Spring Boot layers, and runs on a Temurin 21 JRE (Alpine) as an unprivileged user (`uid 10001`) with a `HEALTHCHECK` on `/actuator/health`.
+
+```bash
+docker build -t ecommerce-api .
+
+docker run -d -p 8080:8080 \
+  -e DB_URL=jdbc:mysql://host.docker.internal:3306/ecommerce_db \
+  -e DB_USER=root -e DB_PASSWORD=... \
+  ecommerce-api
+
+docker inspect --format '{{.State.Health.Status}}' <container>   # → healthy
+```
+
+- Tests are **not** run in the image build (they need a live MySQL) — run `./mvnw verify` in CI first.
+- Dependencies (~62 MB) and application code (~150 kB) are separate layers, so a code change only re-pushes the small one.
+- JVM flags live in `JAVA_TOOL_OPTIONS` (`MaxRAMPercentage=75`, `ExitOnOutOfMemoryError`) and can be overridden with `-e`.
 
 ---
 

@@ -1,0 +1,38 @@
+# Build context is only what the Dockerfile COPYs: mvnw, .mvn/, pom.xml, src/.
+# Everything else is noise, or worse (secrets), in the image build.
+
+# build output & IDE
+target/
+.idea/
+.vscode/
+*.iml
+.history/
+
+# VCS / tooling
+.git/
+.github/
+.claude/
+.playwright-mcp/
+.mvn/timing.properties
+
+# secrets & local config — never bake these in; pass them as env vars at run time
+.env
+.env.*
+!.env.example
+application-local.*
+application-secret*
+*.pem
+*.p12
+*.jks
+
+# database dumps, logs, docs
+db/
+*.log
+logs/
+*.md
+HELP.md
+
+# docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
