@@ -1,5 +1,7 @@
 # ecommerce-api
 
+[![CI](https://github.com/Manish12858/ecommerce-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Manish12858/ecommerce-api/actions/workflows/ci.yml)
+
 A REST API for a small e-commerce back office — categories, products, customers, orders, payments and product reviews — built on **Spring Boot 4.1 / Java 21 / MySQL**.
 
 It is deliberately opinionated: DTOs at the edge, business rules in services, one-way order state machine, stock reserved at order time, and every error shaped by a single `GlobalExceptionHandler`. Interactive docs via Swagger UI.
@@ -129,7 +131,7 @@ docker run -d -p 8080:8080 \
   ecommerce-api
 ```
 
-- Tests are **not** run in the image build (they need a live MySQL) — run `./mvnw verify` in CI first.
+- Tests are **not** run in the image build (they need a live MySQL) — CI runs `./mvnw verify` against a MySQL service first, then builds and pushes `ghcr.io/manish12858/ecommerce-api:latest` (and `:sha-<short>`) on every push to `main`. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 - Dependencies (~62 MB) and application code (~150 kB) are separate layers, so a code change only re-pushes the small one.
 - JVM flags live in `JAVA_TOOL_OPTIONS` (`MaxRAMPercentage=75`, `ExitOnOutOfMemoryError`) and can be overridden with `-e`.
 
