@@ -87,6 +87,7 @@ docker-compose.override.yml
 .claude/*.local.*
 .claude/worktrees/
 CLAUDE.local.md
+.playwright-mcp/
 
 ### OS ###
 .DS_Store
