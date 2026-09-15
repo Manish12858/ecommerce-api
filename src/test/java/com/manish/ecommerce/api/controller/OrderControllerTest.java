@@ -35,6 +35,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -202,14 +203,31 @@ class OrderControllerTest {
     }
 
     @Test
-    void should_return500_when_statusQueryParamIsUnparseable() throws Exception {
-        // Arrange: no handler for MethodArgumentTypeMismatchException in GlobalExceptionHandler,
-        // so it falls through to the generic 500 handler. This is a gap, not a 400.
-
+    void should_return400ListingAllowedValues_when_statusQueryParamIsUnparseable() throws Exception {
         // Act & Assert
         mockMvc.perform(get("/api/v1/orders").queryParam("status", "BOGUS"))
-                .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("An unexpected error occurred"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(
+                        "Invalid value 'BOGUS' for parameter 'status': expected one of "
+                                + "[PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED, REFUNDED]"));
+        verify(orderService, never()).findAll(any(), any(), any());
+    }
+
+    @Test
+    void should_return404_when_pathHasNoEndpoint() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/nope"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("No endpoint GET /api/v1/nope"))
+                .andExpect(jsonPath("$.path").value("/api/v1/nope"));
+    }
+
+    @Test
+    void should_return405_when_verbNotSupportedOnPath() throws Exception {
+        // Act & Assert
+        mockMvc.perform(delete("/api/v1/orders/1"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.status").value(405));
     }
 
     @Test

@@ -6,11 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -52,6 +57,29 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleUnreadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "Malformed request body", request, null);
+    }
+
+    /** A query/path parameter that can't be converted, e.g. {@code ?status=BOGUS} for an enum. */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+        Class<?> required = ex.getRequiredType();
+        String expected = required == null ? "a valid value"
+                : required.isEnum() ? "one of " + Arrays.toString(required.getEnumConstants())
+                : "a " + required.getSimpleName();
+        String message = "Invalid value '" + ex.getValue() + "' for parameter '" + ex.getName() + "': expected " + expected;
+        return build(HttpStatus.BAD_REQUEST, message, request, null);
+    }
+
+    /** No handler / static resource for the path (e.g. GET /, /favicon.ico) — a 404, not a server fault. */
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
+    public ResponseEntity<ErrorResponse> handleNoRoute(Exception ex, HttpServletRequest request) {
+        return build(HttpStatus.NOT_FOUND, "No endpoint " + request.getMethod() + " " + request.getRequestURI(), request, null);
+    }
+
+    /** Right path, wrong verb (e.g. DELETE on /api/v1/orders). */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+        return build(HttpStatus.METHOD_NOT_ALLOWED, ex.getMessage(), request, null);
     }
 
     @ExceptionHandler(Exception.class)

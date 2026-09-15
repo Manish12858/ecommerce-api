@@ -340,6 +340,9 @@ Validation failures list every field problem:
 | Resource not found (`ResourceNotFoundException`) | `404 Not Found` |
 | Duplicate name / slug / SKU / email (`DuplicateResourceException`) | `409 Conflict` |
 | Business rule violated (`BusinessRuleException`) | `422 Unprocessable Entity` |
+| Unknown path (`GET /`, `/favicon.ico`) | `404 Not Found` |
+| Wrong verb on a known path | `405 Method Not Allowed` |
+| Unparseable query/path param (`?status=BOGUS`, `?categoryId=abc`) | `400 Bad Request`, message lists the expected values |
 | Anything unexpected | `500` with a generic message; details go to the log only |
 
 ---
@@ -434,10 +437,9 @@ Findings from the last `/production-readiness` run, in priority order:
 
 1. **No dev/prod profile split** — `show-sql=true` and public Swagger UI apply everywhere. Move dev settings to `application-dev.properties`.
 2. **N+1 on paged `GET /orders`** — customer, items, products and payment load lazily per row. Add `@EntityGraph` for to-one associations and `hibernate.default_batch_fetch_size=20`.
-3. **Unparseable enum query params return 500** (`?status=BOGUS`) — add a `MethodArgumentTypeMismatchException` handler → 400.
-4. **No migration tool** — `schema.sql` can't be run against a live DB. Flyway baseline recommended.
-5. **Stock race** — check-then-decrement without locking; add `@Version` to `Product` or a `PESSIMISTIC_WRITE` read.
-6. No authentication — `AccessDeniedException`/403 is wired but nothing throws it yet.
+3. **No migration tool** — `schema.sql` can't be run against a live DB. Flyway baseline recommended.
+4. **Stock race** — check-then-decrement without locking; add `@Version` to `Product` or a `PESSIMISTIC_WRITE` read.
+5. No authentication — `AccessDeniedException`/403 is wired but nothing throws it yet.
 
 ---
 
